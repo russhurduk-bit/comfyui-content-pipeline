@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Pipeline</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="p-4 md:p-8">
+<div class="max-w-5xl mx-auto">
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-logo">P</div>
+    <span class="nav-title">Content Pipeline</span>
+    <div class="flex-1"></div>
+    <a href="/" class="nav-link active">Dashboard</a>
+    <a href="/settings" class="nav-link">Settings</a>
+    <div class="flex items-center gap-2 ml-4" id="gpuStatus"></div>
+  </nav>
+
+  <!-- Header actions -->
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-bold">Lines</h2>
+    <button class="btn btn-primary" onclick="showNewLineForm()">+ New Line</button>
+  </div>
+
+  <!-- New line form (hidden by default) -->
+  <div id="newLineForm" class="card p-6 mb-6 fade-in" style="display:none">
+    <h3 class="font-semibold mb-4">Create New Line</h3>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Name *</label>
+        <input type="text" id="newName" class="input" placeholder="Line name">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Face Preset</label>
+        <select id="newFace" class="select w-full"></select>
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Drive Folder ID</label>
+        <input type="text" id="newDriveFolder" class="input" placeholder="Google Drive folder ID">
+      </div>
+    </div>
+    <p class="text-xs mt-3" style="color:var(--text-dimmer)">
+      ✨ No video prompt needed — the panel describes the photo before generation.
+    </p>
+    <div class="flex gap-2 mt-4">
+      <button class="btn btn-primary" onclick="createLine()">Create</button>
+      <button class="btn btn-secondary" onclick="hideNewLineForm()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Lines list -->
+  <div id="linesList"></div>
+
+  <!-- Empty state -->
+  <div id="emptyState" class="empty-state" style="display:none">
+    <div class="icon">&#9776;</div>
+    <div class="text-lg mb-2">No content lines yet</div>
+    <div>Create your first line to start the pipeline</div>
+  </div>
+
+</div>
+
+<script src="/js/api.js?v=20260602a"></script>
+<script src="/js/lines.js?v=20260602a"></script>
+</body>
+</html>

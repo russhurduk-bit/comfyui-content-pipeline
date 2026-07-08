@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Line — Content Pipeline</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="p-4 md:p-8">
+<div class="max-w-5xl mx-auto">
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-logo">P</div>
+    <span class="nav-title">Content Pipeline</span>
+    <div class="flex-1"></div>
+    <a href="/" class="nav-link">Dashboard</a>
+    <a href="/settings" class="nav-link">Settings</a>
+    <div class="flex items-center gap-2 ml-4" id="gpuStatus"></div>
+  </nav>
+
+  <!-- Line header -->
+  <div class="flex items-center gap-4 mb-6">
+    <a href="/" class="btn-icon" title="Back">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <div>
+      <h2 class="text-xl font-bold" id="lineName">Loading...</h2>
+      <div class="flex items-center gap-2 mt-1">
+        <span class="badge" id="lineStatus">--</span>
+        <span class="text-xs" style="color:var(--text-dimmer)" id="lineDate"></span>
+      </div>
+    </div>
+    <div class="flex-1"></div>
+    <button class="btn btn-secondary btn-sm" onclick="editLineInfo()">Edit Info</button>
+  </div>
+
+  <!-- Edit modal (hidden) -->
+  <div id="editModal" class="card p-6 mb-6" style="display:none">
+    <h3 class="font-semibold mb-4">Edit Line</h3>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Name</label>
+        <input type="text" id="editName" class="input">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Drive Folder ID</label>
+        <input type="text" id="editDriveFolder" class="input">
+      </div>
+      <div class="md:col-span-2">
+        <div class="flex items-center justify-between mb-1">
+          <label class="block text-sm text-gray-400">Positive Prompt (video)</label>
+          <button type="button" class="btn btn-secondary btn-sm" id="autoPromptBtn" onclick="autoPrompt()">✨ Generate from photo</button>
+        </div>
+        <textarea id="editPositive" class="input" rows="3" placeholder="Leave empty — it will be auto-filled from the photo before video generation"></textarea>
+        <p class="text-xs mt-1" style="color:var(--text-dimmer)">Negative prompt is hidden — a shared default is applied automatically.</p>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button class="btn btn-primary btn-sm" onclick="saveLineInfo()">Save</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('editModal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Pipeline steps -->
+  <div id="pipeline" class="space-y-0">
+
+    <!-- Step 1: Faceswap -->
+    <div class="step" id="step-faceswap">
+      <div class="card p-5 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold">1. Faceswap</h3>
+          <span class="text-xs" style="color:var(--text-dimmer)" id="faceswapStatus"></span>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <!-- Left: upload body -->
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Body Image</label>
+            <div class="upload-zone" id="bodyUploadZone">
+              <input type="file" id="bodyInput" accept="image/*" class="hidden">
+              <div id="bodyPlaceholder">
+                <div class="text-2xl mb-1">+</div>
+                <div class="text-sm" style="color:var(--text-dim)">Upload body photo</div>
+              </div>
+              <img id="bodyPreview" class="hidden w-full rounded-lg max-h-64 object-contain">
+            </div>
+            <div class="mt-2">
+              <label class="block text-sm text-gray-400 mb-1">Face Preset</label>
+              <select id="faceSelect" class="select w-full"></select>
+            </div>
+          </div>
+          <!-- Right: result -->
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Result</label>
+            <div id="faceswapResult" class="min-h-32 flex items-center justify-center rounded-lg" style="background:var(--bg2)">
+              <span style="color:var(--text-dimmer)">No result yet</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button class="btn btn-primary" id="runFaceswapBtn" onclick="runFaceswap()">Run Faceswap</button>
+          <div id="faceswapProgress" class="flex-1 flex items-center gap-2" style="display:none">
+            <div class="spinner"></div>
+            <span class="text-sm" id="faceswapProgressText" style="color:var(--text-dim)"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Clean -->
+    <div class="step" id="step-clean">
+      <div class="card p-5 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold">2. Clean (Remove Logos)</h3>
+          <span class="text-xs" style="color:var(--text-dimmer)" id="cleanStatus"></span>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Input (faceswap result)</label>
+            <div id="cleanInput" class="min-h-32 flex items-center justify-center rounded-lg" style="background:var(--bg2)">
+              <span style="color:var(--text-dimmer)">Waiting for faceswap</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Result</label>
+            <div id="cleanResult" class="min-h-32 flex items-center justify-center rounded-lg" style="background:var(--bg2)">
+              <span style="color:var(--text-dimmer)">No result yet</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <label class="block text-sm text-gray-400 mb-1">Custom prompt (optional)</label>
+          <input type="text" id="cleanPrompt" class="input" placeholder="Default: remove logos/text/watermarks">
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button class="btn btn-primary" id="runCleanBtn" onclick="runClean()">Clean Image</button>
+          <div id="cleanProgress" class="flex-1 flex items-center gap-2" style="display:none">
+            <div class="spinner"></div>
+            <span class="text-sm" id="cleanProgressText" style="color:var(--text-dim)"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Set Reference -->
+    <div class="step" id="step-reference">
+      <div class="card p-5 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold">3. Set Reference</h3>
+          <span class="text-xs" style="color:var(--text-dimmer)" id="referenceStatus"></span>
+        </div>
+        <div id="referencePreview" class="mb-4"></div>
+        <button class="btn btn-success" id="setRefBtn" onclick="setReference()">Confirm as Reference</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Photo Variations -->
+    <div class="step" id="step-photos">
+      <div class="card p-5 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold">4. Photo Variations</h3>
+          <span class="text-xs" id="photoStats" style="color:var(--text-dimmer)"></span>
+        </div>
+
+        <!-- Controls -->
+        <div class="grid md:grid-cols-[280px_1fr] gap-6">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Count</span>
+              <div class="flex items-center gap-2">
+                <input type="range" min="1" max="50" value="10" id="photoCount" class="w-24"
+                       oninput="document.getElementById('photoCountVal').textContent=this.value"
+                       style="-webkit-appearance:none;background:#333;height:4px;border-radius:2px;outline:none">
+                <span class="text-sm font-bold" style="color:var(--accent2)" id="photoCountVal">10</span>
+              </div>
+            </div>
+
+            <div class="text-xs font-medium mb-2" style="color:var(--text-dim)">Toggles</div>
+            <div class="space-y-2" id="togglesContainer">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">Clothing Color</span>
+                <div class="toggle-track" data-toggle="clothing_color"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">Hair Shade</span>
+                <div class="toggle-track" data-toggle="hair_shade"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">Brand Text</span>
+                <div class="toggle-track" data-toggle="brand_text"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">Outfit Change</span>
+                <div class="toggle-track" data-toggle="outfit_change"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">Toy Replace</span>
+                <div class="toggle-track" data-toggle="toy_replace"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">Toy Color</span>
+                <div class="toggle-track" data-toggle="toy_color"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">Interior</span>
+                <div class="toggle-track" data-toggle="interior_details"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="flex items-center justify-between mt-2 pt-2" style="border-top:1px solid var(--border)">
+                <span class="text-sm">Auto-verify detail</span>
+                <div class="toggle-track" data-toggle="verify_detail"><div class="toggle-knob"></div></div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary w-full" id="genPhotosBtn" onclick="generatePhotos()">Generate Photos</button>
+
+            <div class="flex gap-2">
+              <button class="btn btn-success btn-sm flex-1" onclick="bulkQA('accepted')">Accept All</button>
+              <button class="btn btn-danger btn-sm flex-1" onclick="bulkQA('rejected')">Reject All</button>
+            </div>
+          </div>
+
+          <!-- Photo grid -->
+          <div>
+            <div id="photoProgress" class="mb-4" style="display:none">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm" id="photoProgressText">Generating...</span>
+                <span class="text-sm" style="color:var(--accent2)" id="photoProgressCount">0/0</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" id="photoProgressFill" style="width:0%"></div></div>
+              <div class="text-xs mt-1" style="color:var(--text-dimmer)" id="photoProgressDetail"></div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="photoGrid"></div>
+            <div id="photoEmpty" class="empty-state py-12">
+              <div style="color:var(--text-dimmer)">Set reference first, then generate photos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: Videos -->
+    <div class="step" id="step-videos">
+      <div class="card p-5 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold">5. Video Generation</h3>
+          <span class="text-xs" id="videoStats" style="color:var(--text-dimmer)"></span>
+        </div>
+
+        <!-- Video ref upload -->
+        <div class="mb-4">
+          <label class="block text-sm text-gray-400 mb-2">Video Reference</label>
+          <div class="upload-zone p-3" id="videoRefUploadZone" style="display:inline-block">
+            <input type="file" id="videoRefInput" accept="video/*" class="hidden">
+            <span class="text-sm" style="color:var(--text-dim)" id="videoRefLabel">Upload video reference</span>
+          </div>
+        </div>
+
+        <div id="vastStatusCard" class="card p-3 mb-4 text-sm" style="border-color:var(--border)">
+          <div class="flex items-center gap-2">
+            <span class="status-dot" id="vastDot"></span>
+            <span id="vastStatusText" style="color:var(--text-dim)">Checking Vast...</span>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mb-4">
+          <button class="btn btn-primary" id="genVideosBtn" onclick="generateVideos()">Generate Videos from Accepted Photos</button>
+        </div>
+
+        <div id="videoProgress" class="mb-4" style="display:none">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm" id="videoProgressText">Generating...</span>
+            <span class="text-sm" style="color:var(--accent2)" id="videoProgressCount">0/0</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="videoProgressFill" style="width:0%"></div></div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="videoGrid"></div>
+        <div id="videoEmpty" class="text-center py-8" style="color:var(--text-dimmer);display:none">
+          Accept photos first, then generate videos
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6: Drive Upload -->
+    <div class="step" id="step-drive">
+      <div class="card p-5 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold">6. Upload to Google Drive</h3>
+        </div>
+        <div id="driveSummary" class="text-sm mb-4" style="color:var(--text-dim)"></div>
+        <div id="driveProgress" class="mb-4" style="display:none">
+          <div class="progress-bar"><div class="progress-fill" id="driveProgressFill" style="width:0%"></div></div>
+          <div class="text-xs mt-1" style="color:var(--text-dimmer)" id="driveProgressText"></div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-primary" id="uploadDriveBtn" onclick="uploadToDrive()">Upload to Drive</button>
+          <a id="driveFolderLink" href="#" target="_blank" class="btn btn-secondary" style="display:none">Open Drive Folder</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/api.js?v=20260602a"></script>
+<script src="/js/pipeline.js?v=20260602a"></script>
+</body>
+</html>

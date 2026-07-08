@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — Content Pipeline</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="p-4 md:p-8">
+<div class="max-w-3xl mx-auto">
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-logo">P</div>
+    <span class="nav-title">Content Pipeline</span>
+    <div class="flex-1"></div>
+    <a href="/" class="nav-link">Dashboard</a>
+    <a href="/settings" class="nav-link active">Settings</a>
+    <div class="flex items-center gap-2 ml-4" id="gpuStatus"></div>
+  </nav>
+
+  <h2 class="text-xl font-bold mb-6">Settings</h2>
+
+  <!-- Vast.ai -->
+  <div class="card p-6 mb-4">
+    <h3 class="font-semibold mb-4">Vast.ai</h3>
+    <div class="mb-4">
+      <label class="block text-sm text-gray-400 mb-1">API Key</label>
+      <div class="flex gap-2">
+        <input type="password" id="vastKey" class="input flex-1" placeholder="Enter Vast.ai API key">
+        <button class="btn btn-primary" onclick="saveVastKey()">Save</button>
+      </div>
+      <div class="text-xs mt-1" id="vastKeyStatus" style="color:var(--text-dimmer)"></div>
+    </div>
+    <div id="vastInfo" class="text-sm" style="color:var(--text-dim)"></div>
+  </div>
+
+  <!-- Google Drive -->
+  <div class="card p-6 mb-4">
+    <h3 class="font-semibold mb-4">Google Drive</h3>
+    <div class="mb-4">
+      <label class="block text-sm text-gray-400 mb-1">Default Folder ID</label>
+      <div class="flex gap-2">
+        <input type="text" id="driveFolder" class="input flex-1" placeholder="Google Drive folder ID">
+        <button class="btn btn-primary" onclick="saveDriveFolder()">Save</button>
+      </div>
+    </div>
+    <div id="driveStatus" class="text-sm" style="color:var(--text-dim)"></div>
+  </div>
+
+  <!-- Default Prompts -->
+  <div class="card p-6 mb-4">
+    <h3 class="font-semibold mb-4">Default Prompts</h3>
+    <div class="mb-4">
+      <label class="block text-sm text-gray-400 mb-1">Positive Prompt</label>
+      <textarea id="defaultPositive" class="input" rows="3" placeholder="Default positive prompt for video generation"></textarea>
+    </div>
+    <div class="mb-4">
+      <label class="block text-sm text-gray-400 mb-1">Negative Prompt</label>
+      <textarea id="defaultNegative" class="input" rows="3" placeholder="Default negative prompt for video generation"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="savePrompts()">Save Prompts</button>
+  </div>
+
+  <!-- Face Presets -->
+  <div class="card p-6 mb-4">
+    <h3 class="font-semibold mb-4">Face Presets</h3>
+    <div class="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4" id="faceGrid"></div>
+    <div class="upload-zone p-4" id="faceUploadZone">
+      <input type="file" id="faceInput" accept="image/*" class="hidden">
+      <div class="text-sm" style="color:var(--text-dim)">Drop or click to add face preset</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/settings.js"></script>
+</body>
+</html>
